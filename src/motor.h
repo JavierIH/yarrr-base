@@ -19,6 +19,7 @@ typedef struct{
     uint32_t port_pwm;
     uint32_t tim_pwm;
     enum tim_oc_id tim_oc;
+    bool invert;
 } Motor;
 
 void motor_init(Motor *m);

@@ -29,7 +29,7 @@ void motor_set_speed(Motor *m, uint16_t speed){
 }
 
 void motor_set_direction(Motor *m, bool direction){
-    if (direction){
+    if (direction == m->invert){
         gpio_set(m->port_in1, m->gpio_in1);
         gpio_clear(m->port_in2, m->gpio_in2);
     }

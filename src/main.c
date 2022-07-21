@@ -46,38 +46,43 @@ volatile uint32_t pos2;
 
 int main(void){
     Motor motor_l = (Motor){
-        .gpio_in1 = GPIO8,
+        .gpio_in1 = GPIO9,
         .port_in1 = GPIOB,
-        .gpio_in2 = GPIO9,
+        .gpio_in2 = GPIO8,
         .port_in2 = GPIOB,
         .gpio_pwm = GPIO7,
         .port_pwm = GPIOB,
         .tim_pwm = TIM4,
         .tim_oc = TIM_OC2,
+        .invert = false
     };
-    Motor motor_r= (Motor){
-        .gpio_in1 = GPIO5,
-        .port_in1 = GPIOB,
-        .gpio_in2 = GPIO12,
-        .port_in2 = GPIOA,
+    Motor motor_r = (Motor){
+        .gpio_in1 = GPIO12,
+        .port_in1 = GPIOA,
+        .gpio_in2 = GPIO5,
+        .port_in2 = GPIOB,
         .gpio_pwm = GPIO6,
         .port_pwm = GPIOB,
         .tim_pwm = TIM4,
         .tim_oc = TIM_OC1,
+        .invert = true
     };
 
     init();
+    motor_init(&motor_r);
     motor_init(&motor_l);
-    //motor_init(&motor_r);
     encoderInit();
 
-    motor_set_direction(&motor_l, 0);
-    motor_set_speed(&motor_l, 100);
-    //motor_set_speed(&motor_r, 200);
+    motor_set_direction(&motor_l, 1);
+    motor_set_direction(&motor_r, 1);
+    motor_set_speed(&motor_l, 600);
+    motor_set_speed(&motor_r, 600);
     motor_free(&motor_l);
+    motor_free(&motor_r);
 
     while (1){
         gpio_toggle(GPIOC, GPIO13);
+
         pos1 = timer_get_counter(TIM3);
         pos2 = timer_get_counter(TIM2);
         delay(100);
