@@ -3,6 +3,20 @@
 #include <libopencm3/stm32/timer.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/stm32/adc.h>
+
+#include <libopencm3/cm3/dwt.h>
+#include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/scb.h>
+#include <libopencm3/cm3/systick.h>
+#include <libopencm3/stm32/adc.h>
+#include <libopencm3/stm32/dma.h>
+#include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/rcc.h>
+#include <libopencm3/stm32/spi.h>
+#include <libopencm3/stm32/timer.h>
+#include <libopencm3/stm32/usart.h>
+
 #include "motor.h"
 
 volatile uint32_t ticks;
@@ -43,6 +57,7 @@ static void encoderInit(void){
 
 volatile uint32_t pos1;
 volatile uint32_t pos2;
+volatile uint32_t battery;
 
 int main(void){
     Motor motor_l = (Motor){
@@ -73,6 +88,26 @@ int main(void){
     motor_init(&motor_l);
     encoderInit();
 
+    uint8_t channel_sequence[16];
+	rcc_periph_clock_enable(RCC_ADC2);
+    
+    gpio_set_mode(GPIOB, GPIO_MODE_INPUT, GPIO_CNF_INPUT_ANALOG, GPIO1);
+
+	channel_sequence[0] = ADC_CHANNEL9;
+	adc_power_off(ADC2);
+	adc_disable_scan_mode(ADC2);
+	adc_set_single_conversion_mode(ADC2);
+	adc_disable_external_trigger_regular(ADC2);
+	adc_set_right_aligned(ADC2);
+	adc_set_sample_time_on_all_channels(ADC2, ADC_SMPR_SMP_13DOT5CYC);
+	adc_set_regular_sequence(ADC2, 1, channel_sequence);
+    
+    adc_power_on(ADC2);
+	for (int i = 0; i < 800000; i++)
+		__asm__("nop");
+	adc_reset_calibration(ADC2);
+	adc_calibrate(ADC2);
+
     motor_set_direction(&motor_l, 1);
     motor_set_direction(&motor_r, 1);
     motor_set_speed(&motor_l, 600);
@@ -82,6 +117,10 @@ int main(void){
 
     while (1){
         gpio_toggle(GPIOC, GPIO13);
+
+        adc_start_conversion_direct(ADC2);
+        while (!adc_eoc(ADC2));
+        battery = adc_read_regular(ADC2);
 
         pos1 = timer_get_counter(TIM3);
         pos2 = timer_get_counter(TIM2);
