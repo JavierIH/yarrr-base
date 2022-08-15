@@ -1,17 +1,19 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/timer.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/cm3/nvic.h>
-#include <libopencm3/cm3/dwt.h>
-#include <libopencm3/cm3/scb.h>
 #include <libopencm3/stm32/dma.h>
-#include <libopencm3/stm32/spi.h>
-#include <libopencm3/stm32/usart.h>
+//#include <libopencm3/stm32/spi.h>
+//#include <libopencm3/stm32/usart.h>
 
 #include "motor.h"
 #include "encoder.h"
 #include "battery.h"
+
+#define MOTOR_KP 0.8
+#define MOTOR_KI 0.1
+#define MOTOR_KD 0
+#define SAMPLE_RATE 200
 
 volatile uint32_t ticks;
 
@@ -67,6 +69,8 @@ Encoder encoder_r = (Encoder){
     .timer = TIM3,
     .rcc_timer = RCC_TIM3};
 
+uint16_t command_speed;
+
 int main(void) {
 
     init();
@@ -81,7 +85,7 @@ int main(void) {
     // motor_set_output(&motor_l, 200);
     // motor_set_output(&motor_r, 200);
     motor_stop(&motor_l);
-    motor_stop(&motor_r);
+    // motor_stop(&motor_r);
     gpio_set(GPIOC, GPIO13);
     while (1) {
         // gpio_toggle(GPIOC, GPIO13);
@@ -89,11 +93,16 @@ int main(void) {
         battery = battery_get_value();
         pos1 = encoder_get_value(&encoder_l);
         pos2 = encoder_get_value(&encoder_r);
-        delay(1000);
+        command_speed = 100;
+        delay(10000);
+        command_speed = 300;
+        delay(10000);
+        command_speed = 0;
+        delay(5000);
     }
 }
 
-int motor_r_pos = 0;
+/*int motor_r_pos = 0;
 int motor_r_prev_pos = 0;
 int motor_r_delta_pos = 0;
 int motor_r_error_pos = 0;
@@ -103,33 +112,44 @@ int motor_l_pos = 0;
 int motor_l_prev_pos = 0;
 int motor_l_delta_pos = 0;
 int motor_l_error_pos = 0;
-int motor_l_target_pos = 100;
-uint16_t speed = 0;
+int motor_l_target_pos = 100;*/
+int output = 0;
+int error;
+int error_ref;
+
+static void motor_update_pid(Motor *motor, Encoder *encoder, uint16_t speed) { // speed in ticks/s
+    int prev_pos = encoder->value;
+    int delta_pos = encoder_get_value(encoder) - prev_pos; // ticks in lasts 200ms
+    error_ref = error;
+    error = speed - (1000 / SAMPLE_RATE) * delta_pos;      // speed in ticks/200ms
+    int delta_error = error - error_ref;
+    output += MOTOR_KP*error + MOTOR_KI*delta_error;
+
+    // visual check of the settling time
+    if (error == 0)
+        gpio_clear(GPIOC, GPIO13);
+    else
+        gpio_set(GPIOC, GPIO13);
+
+    if (output < 0) output = 0;
+
+    motor_set_output(motor, output);
+}
 
 void sys_tick_handler(void) {
     ticks++;
     static uint16_t task_tick = 1;
 
     switch (task_tick) {
-    case 100:
-        break;
-    case 200:
-        // motor_update_pid(&motor_l);
-        // motor_update_pid(&motor_r);
-
-        motor_r_prev_pos = motor_r_pos;
-        motor_r_pos = encoder_get_value(&encoder_r);
-        motor_r_delta_pos = motor_r_pos - motor_r_prev_pos;
-        motor_r_error_pos = motor_r_target_pos - motor_r_delta_pos;
-        speed += 5 * motor_l_error_pos;
-        motor_set_output(&motor_r, speed);
-
+    case SAMPLE_RATE:
+        motor_update_pid(&motor_r, &encoder_r, command_speed);
+        // motor_update_pid(&motor_l, &encoder_l, 100);
         break;
     default:
         break;
     }
 
     task_tick++;
-    if (task_tick > 200)
+    if (task_tick > SAMPLE_RATE)
         task_tick = 1;
 }

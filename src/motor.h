@@ -29,7 +29,6 @@ typedef struct{
 void motor_init(Motor *motor);
 void motor_set_output(Motor *motor, uint16_t output);
 uint16_t motor_get_output(Motor *motor);
-void motor_update_pid(Motor *motor);
 void motor_set_direction(Motor *motor, bool direction);
 bool motor_get_direction(Motor *motor);
 void motor_brake(Motor *motor, uint16_t brake);
