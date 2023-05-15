@@ -1,0 +1,27 @@
+<?xml version='1.0'?>
+<mavlink>
+    <messages>
+        <message id="0" name="ROBOT_MOTORS_PIDS">
+            <description>Generic configuration message</description>
+            <field type="uint8_t" name="id">Parameter identifier</field>
+            <field type="float" name="kp">Kp</field>
+            <field type="float" name="ki">Ki</field>
+            <field type="float" name="kd">Kd</field>
+            <field type="uint16_t" name="sample_rate">Time for pids refresh</field>
+        </message>
+        <message id="1" name="ROBOT_ENCODERS">
+            <description>Generic configuration message</description>
+            <field type="uint8_t" name="id">Parameter identifier</field>
+            <field type="uint32_t" name="total_left">Total value</field>
+            <field type="uint32_t" name="total_right">Total value</field>
+            <field type="int32_t" name="delta_left">Increment from last message</field>
+            <field type="int32_t" name="delta_right">Increment from last message</field>
+        </message>
+        <message id="2" name="ROBOT_MOTORS_SPEED">
+            <description>Generic configuration message</description>
+            <field type="uint8_t" name="id">Parameter identifier</field>
+            <field type="uint16_t" name="speed_left">Speed of left motor</field>
+            <field type="uint16_t" name="speed_right">Speed of right motor</field>
+        </message>
+    </messages>
+</mavlink>

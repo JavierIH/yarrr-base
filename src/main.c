@@ -6,9 +6,12 @@
 //#include <libopencm3/stm32/spi.h>
 //#include <libopencm3/stm32/usart.h>
 
+#include "yarrr/mavlink.h"
+
 #include "motor.h"
 #include "encoder.h"
 #include "battery.h"
+#include "serial.h"
 
 #define MOTOR_KP 0.8
 #define MOTOR_KI 0.1
@@ -74,6 +77,7 @@ uint16_t command_speed;
 int main(void) {
 
     init();
+    serial_init(115200);
     motor_init(&motor_l);
     motor_init(&motor_r);
     encoder_init(&encoder_l);
@@ -86,19 +90,29 @@ int main(void) {
     // motor_set_output(&motor_r, 200);
     motor_stop(&motor_l);
     // motor_stop(&motor_r);
-    gpio_set(GPIOC, GPIO13);
+    
+    mavlink_message_t msg;
+    uint16_t len;
+    uint8_t buf[1024];
+    int x=0;
+
     while (1) {
-        // gpio_toggle(GPIOC, GPIO13);
+        gpio_toggle(GPIOC, GPIO13);
 
         battery = battery_get_value();
         pos1 = encoder_get_value(&encoder_l);
         pos2 = encoder_get_value(&encoder_r);
-        command_speed = 100;
-        delay(10000);
-        command_speed = 300;
-        delay(10000);
-        command_speed = 0;
-        delay(5000);
+        //command_speed = 100;
+        //serial_print(" OK! \n");        
+        delay(100);
+
+        int ret = mavlink_msg_robot_encoders_pack(2, 3, &msg, 4, 123, 456, 78, -90);
+        len = mavlink_msg_to_send_buffer(buf, &msg);
+        serial_send(buf, len);
+
+        //char str[20];
+        //sprintf(str, " [len: %d]", len);
+        //serial_print(str);
     }
 }
 
@@ -126,10 +140,10 @@ static void motor_update_pid(Motor *motor, Encoder *encoder, uint16_t speed) { /
     output += MOTOR_KP*error + MOTOR_KI*delta_error;
 
     // visual check of the settling time
-    if (error == 0)
-        gpio_clear(GPIOC, GPIO13);
-    else
-        gpio_set(GPIOC, GPIO13);
+    //if (error == 0)
+    //    gpio_clear(GPIOC, GPIO13);
+    //else
+    //    gpio_set(GPIOC, GPIO13);
 
     if (output < 0) output = 0;
 
