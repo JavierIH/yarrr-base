@@ -42,3 +42,7 @@ void serial_send(uint8_t *buffer, uint16_t len){
 		usart_send_blocking(USART3, *(buffer+i));
 	}
 }
+
+void serial_send_ch(uint8_t ch){
+	usart_send_blocking(USART3, ch);
+}

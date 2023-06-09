@@ -91,28 +91,33 @@ int main(void) {
     motor_stop(&motor_l);
     // motor_stop(&motor_r);
     
-    mavlink_message_t msg;
+    uint32_t x=0;
+    mavlink_message_t output_msg;
+    mavlink_robot_encoders_t encoders_msg;
+    uint8_t output_buffer[256];
     uint16_t len;
-    uint8_t buf[1024];
-    int x=0;
 
     while (1) {
-        gpio_toggle(GPIOC, GPIO13);
+        
+        if(x%100==0) gpio_toggle(GPIOC, GPIO13);
 
-        battery = battery_get_value();
-        pos1 = encoder_get_value(&encoder_l);
-        pos2 = encoder_get_value(&encoder_r);
+        //battery = battery_get_value();
         //command_speed = 100;
-        //serial_print(" OK! \n");        
-        delay(100);
+        //serial_print("\n\rOK! ");        
 
-        int ret = mavlink_msg_robot_encoders_pack(2, 3, &msg, 4, 123, 456, 78, -90);
-        len = mavlink_msg_to_send_buffer(buf, &msg);
-        serial_send(buf, len);
+        encoders_msg.total_left = encoder_get_value(&encoder_l);;
+        encoders_msg.total_right = encoder_get_value(&encoder_r);;
+        encoders_msg.delta_left = x;
+        encoders_msg.delta_right = 444;
+        mavlink_msg_robot_encoders_encode(1, 1, &output_msg, &encoders_msg);
+        len = mavlink_msg_to_send_buffer(output_buffer, &output_msg);
+        for(uint16_t i=0; i<len; i++){
+            serial_send_ch(output_buffer[i]);
+        }
 
-        //char str[20];
-        //sprintf(str, " [len: %d]", len);
-        //serial_print(str);
+
+        x++;
+        delay(2);
     }
 }
 
@@ -152,7 +157,7 @@ static void motor_update_pid(Motor *motor, Encoder *encoder, uint16_t speed) { /
 
 void sys_tick_handler(void) {
     ticks++;
-    static uint16_t task_tick = 1;
+    /*static uint16_t task_tick = 1;
 
     switch (task_tick) {
     case SAMPLE_RATE:
@@ -165,5 +170,5 @@ void sys_tick_handler(void) {
 
     task_tick++;
     if (task_tick > SAMPLE_RATE)
-        task_tick = 1;
+        task_tick = 1;*/
 }
