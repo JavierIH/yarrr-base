@@ -23,5 +23,10 @@
             <field type="uint16_t" name="speed_left">Speed of left motor</field>
             <field type="uint16_t" name="speed_right">Speed of right motor</field>
         </message>
+        <message id="3" name="ROBOT_BATTERY">
+            <description>Generic configuration message</description>
+            <field type="uint8_t" name="id">Parameter identifier</field>
+            <field type="uint16_t" name="battery">Battery level in volts</field>
+        </message>
     </messages>
 </mavlink>
